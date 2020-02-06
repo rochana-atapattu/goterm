@@ -1,4 +1,4 @@
-package terminal
+package termlib
 
 import (
 	"bytes"
@@ -15,9 +15,6 @@ import (
 	"github.com/riywo/loginshell"
 )
 
-type instance struct {
-	Instanceid string `json:"instanceid"`
-}
 type body struct {
 	Body   obj `json:"body"`
 	Status int `json:"statusCode"`
@@ -32,7 +29,15 @@ type obj struct {
 	Bastions  []bastion `json: "bastions"`
 }
 
-func CreateTerm(cmd string) platform.Pty {
+func StartPty(i string) {
+	b := getServers(i)
+	cmd := createProxyCmd(b)
+
+	createTerm(cmd)
+
+}
+
+func createTerm(cmd string) platform.Pty {
 	conf := getConfig()
 	logger, err := getLogger(conf)
 	if err != nil {
@@ -85,18 +90,17 @@ func CreateTerm(cmd string) platform.Pty {
 	}()
 
 	fmt.Println("got request guestProcess.Wait()")
-	func() {
-		runtime.LockOSThread()
-		if err := g.Render(); err != nil {
-			logger.Fatalf("Render error: %s", err)
-		}
-	}()
+
+	runtime.LockOSThread()
+	if err := g.Render(); err != nil {
+		logger.Fatalf("Render error: %s", err)
+	}
 	logger.Infof("Done . . .")
 
 	return pty
 }
 
-func GetServers(instanceID string) body {
+func getServers(instanceID string) body {
 	jsonData := map[string]string{"instance_id": instanceID}
 	jsonValue, _ := json.Marshal(jsonData)
 	response, err := http.Post("https://jj75ccpa08.execute-api.ap-southeast-1.amazonaws.com/dev/server", "application/json", bytes.NewBuffer(jsonValue))
@@ -115,7 +119,7 @@ func GetServers(instanceID string) body {
 	return b
 }
 
-func CreateProxyCmd(b body) string {
+func createProxyCmd(b body) string {
 	proxycommand := fmt.Sprintf("ssh -J %s@%s:22 %s@%s \r", b.Body.Bastions[0].BastionUser, b.Body.Bastions[0].Publicip, b.Body.User, b.Body.Privateip)
 	return proxycommand
 }

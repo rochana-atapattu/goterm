@@ -3,10 +3,14 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/rochana-atapattu/goterm/termlib"
 	"io/ioutil"
-	"github.com/user/goterm/lib"
 	"net/http"
 )
+
+type instance struct {
+	Instanceid string `json:"instanceid"`
+}
 
 func main() {
 	http.HandleFunc("/", TestHandler)
@@ -25,12 +29,8 @@ func TestHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	b := t.GetServers(i.Instanceid)
-	cmd := t.CreateProxyCmd(b)
-
-	go func() {
-		t.CreateTerm(cmd)
-	}()
+	termlib.StartPty(i.Instanceid)
 
 	fmt.Fprint(w, "Welcome to my website!")
+	return
 }
